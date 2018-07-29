@@ -55,10 +55,12 @@ VALID_KICK_ATTACK_COMMANDS = [
     #BUTTON.X,
     BUTTON.L]
 
+ALL_VALID_ATTACK_COMMANDS = VALID_PUNCH_ATTACK_COMMANDS + VALID_KICK_ATTACK_COMMANDS
+
 VALID_COMMANDS = list(VALID_DIRECTION_COMMANDS)
 
 for direction in ALL_ATTACK_DIRECTION_COMMANDS:
-    for attack in VALID_PUNCH_ATTACK_COMMANDS + VALID_KICK_ATTACK_COMMANDS:
+    for attack in ALL_VALID_ATTACK_COMMANDS:
         new_command = list(direction)
         new_command.append(attack)
         VALID_COMMANDS.append(new_command)
@@ -68,3 +70,18 @@ for direction in NO_KICK_DIRECTION_COMMANDS:
         new_command = list(direction)
         new_command.append(attack)
         VALID_COMMANDS.append(new_command)
+        
+VALID_COMMANDS = [[BUTTON.LEFT,],
+                  [BUTTON.RIGHT,],
+                  [BUTTON.DOWN,],
+                  [BUTTON.LEFT,BUTTON.DOWN],
+                  [BUTTON.RIGHT,BUTTON.DOWN],
+                  [BUTTON.LEFT,BUTTON.R],
+                  [BUTTON.RIGHT,BUTTON.R],
+                  [BUTTON.DOWN,BUTTON.R],
+                  [BUTTON.LEFT,BUTTON.DOWN,BUTTON.L],
+                  [BUTTON.RIGHT,BUTTON.DOWN,BUTTON.L],
+                  [BUTTON.LEFT,BUTTON.L],
+                  [BUTTON.RIGHT,BUTTON.L],
+                  [BUTTON.UP,BUTTON.LEFT,],
+                  [BUTTON.UP,BUTTON.RIGHT,],]

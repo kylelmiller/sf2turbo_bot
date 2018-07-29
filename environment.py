@@ -19,7 +19,8 @@ SAVE_STATES = ["SNES/State/ryu_chunli.State",
                "SNES/State/ryu_zang.State",
                "SNES/State/ryu_balrog.State",
                "SNES/State/ryu_guile.State",
-               "SNES/State/ryu_vega.State",]
+               #"SNES/State/ryu_vega.State", Vega is really different, has invuln on the wall
+               ]
 
 class Environment(gym.Env):
     
@@ -36,7 +37,7 @@ class Environment(gym.Env):
         
         # Set these in ALL subclasses
         self.action_space = spaces.Discrete(len(VALID_COMMANDS)) 
-        self.observation_space = spaces.Box(low=-176, high=176, shape=(GAME_STATE_INPUT_LENGTH*history,))
+        self.observation_space = spaces.Box(low=-1, high=1, shape=(GAME_STATE_INPUT_LENGTH*history,))
         
         self._connect(host, port)
         
@@ -51,7 +52,7 @@ class Environment(gym.Env):
         self._load_save(self.save_file_location)
         game_state, reward = self._receive()
         self.obsevations = []
-        for i in range(self.history):
+        for _ in range(self.history):
             self.obsevations.extend(game_state.get_input_features())
         return np.array(self.obsevations)
         
@@ -78,16 +79,7 @@ class Environment(gym.Env):
             command['savegamepath'] = save_file_location
         self._send_to_emulator(command)
         
-    def _receive(self):
-        # before passing on a recieved game state we need to clear out our command backlog
-        while len(self.command_queue):
-            data = self.conn.recv(BUFSIZE)
-            if not data: 
-                return None, None
-            
-            self._send_to_emulator(self.command_queue[0])
-            del self.command_queue[0]
-            
+    def _receive_game_state(self):        
         # receive the game state
         data = self.conn.recv(BUFSIZE)
         if not data: 
@@ -95,7 +87,26 @@ class Environment(gym.Env):
                 
         # load the game state
         raw_data = json.loads(data.decode('ascii'))
-        game_state = gamestate.GameState(raw_data, raw_data[self.us], raw_data[self.them])
+        return gamestate.GameState(raw_data, raw_data[self.us], raw_data[self.them])
+        
+    def _receive(self):
+        # before passing on a received game state we need to clear out our command backlog
+        while len(self.command_queue):
+            data = self.conn.recv(BUFSIZE)
+            if not data: 
+                return None, None
+            
+            self._send_to_emulator(self.command_queue[0])
+            del self.command_queue[0]
+        
+        # receive the current game state        
+        game_state = self._receive_game_state()
+        
+        # we skip frames until we can issue a valid command again
+        if game_state.us['jumping'] and game_state.us['in_move']:
+            while game_state.us['jumping']:
+                self._send_to_emulator(self._get_base_command())
+                game_state = self._receive_game_state()
         
         # calculate the reward from the previous command
         #previous_reward = self.previous_health_difference - game_state.get_health_difference()
@@ -120,7 +131,11 @@ class Environment(gym.Env):
             command[self.us][button.value] = True
         
         # we only want to issue a button command every 3 frames
-        for i in range(self.skip_frames):
+        if len([button for button in buttons if button in ALL_VALID_ATTACK_COMMANDS]):
+            multiplier = 6
+        else:
+            multiplier = 1
+        for _ in range(self.skip_frames*multiplier):
             self.command_queue.append(command)
         self._send_to_emulator(command)
     

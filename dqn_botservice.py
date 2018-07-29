@@ -41,6 +41,7 @@ def record_game_states():
         
         while not done:
             action = random.choice(range(len(VALID_COMMANDS)))
+            #action = VALID_COMMANDS.index([BUTTON.UP,])
         
             observation, reward, done, metadata = env.step(action)
         
@@ -70,18 +71,18 @@ def main():
         us = 'p2'
         them = 'p1'        
     
-    env = environment.Environment(us=us, them=them, skip_frames=3, port=args.port)
-    model = deepq.models.mlp([128, 128])
+    env = environment.Environment(us=us, them=them, skip_frames=3, port=args.port, history=4, save_file_location="SNES/State/ryu_blanka.State")
+    model = deepq.models.mlp([512, 512,])
     act = deepq.learn(
         env,
         q_func=model,
-        lr=1e-2,
-        max_timesteps=10000000,
+        lr=1e-3,
+        max_timesteps=700000,
         buffer_size=50000,
-        exploration_fraction=0.4,
+        exploration_fraction=0.1,
         exploration_final_eps=0.02,
-        gamma=0.93,
-        learning_starts=20000,
+        gamma=0.9,
+        learning_starts=5000,
         print_freq=10,
         callback=callback
     )
